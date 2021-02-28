@@ -16,11 +16,14 @@ const RegisterationForm = (props) => {
         })
     }
 
-    const handleConfirmBlur = e => {
-        const { value } = e.target;
-        this.setState({ confirmDirty: this.state.confirmDirty || !!value});
-    }
-
+    const validateToNextPassword = (rule, value, callback) => {
+        const { form } = this.props;
+        if (value && this.state.confirmDirty) {
+            form.validateFields(['confirm'], { force: true });
+        }
+        callback();
+    };
+ 
     const compareToFirstPassword = (rule, value, callback) => {
         const { form } = this.props;
         if (value && value !== form.getFieldValue('password')) {
@@ -30,14 +33,37 @@ const RegisterationForm = (props) => {
         }
     };
  
-    const validateToNextPassword = (rule, value, callback) => {
-        const { form } = this.props;
-        if (value && this.state.confirmDirty) {
-            form.validateFields(['confirm'], { force: true });
-        }
-        callback();
+    const handleConfirmBlur = e => {
+        const { value } = e.target;
+        this.setState({ confirmDirty: this.state.confirmDirty || !!value });
     };
  
+    const handleSubmit = e => {
+        e.preventDefault();
+        this.props.form.validateFieldsAndScroll((err, values) => {
+            if (!err) {
+                console.log('Received values of form: ', values);
+ 
+                fetch(`${API_ROOT}/signup`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: values.username,
+                        password: values.password
+                    })
+                })
+                    .then(response => {
+                    console.log(response);
+                    if(response.ok) {
+                        return response.text();
+                    }
+                })
+                    .then(data => {
+                        console.log(data)
+                        this.props.history.push('/login');
+                    })
+            }
+        });
+    };
 
     const formItemLayout = {
         labelCol: {
@@ -104,6 +130,7 @@ const RegisterationForm = (props) => {
                 <Button type="primary" htmlType="submit">
                     Register
                 </Button>
+                <p>I already have an account, go back to <Link to="/login">login</Link></p>
             </Form.Item>
         </Form>
     )
